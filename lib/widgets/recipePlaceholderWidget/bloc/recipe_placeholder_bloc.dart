@@ -31,6 +31,10 @@ class RecipePlaceholderBloc
       final response = await recipesRepository.getRecipeaByProductId(
         productId: event.productId,
       );
+      
+      // Debug: Print the response to see what we're getting from the server
+      print('Recipe response for product ${event.productId}: $response');
+      
       List<Map<String, dynamic>> finaly = [];
       List<IngredientEntity> ingredients = [];
       List<int> ingredientsId = [];
@@ -38,23 +42,30 @@ class RecipePlaceholderBloc
         ingredientsId.add(element.ingredientId);
       });
       ingredientsId.forEach((element) {
-        IngredientEntity ingredientEntity = event.ingredients.firstWhere((
-          ingredient,
-        ) {
-          return ingredient.id == element;
-        });
-        RecipeEntity recipes = response.firstWhere((recipe) {
-          return recipe.ingredientId == element;
-        });
+        try {
+          IngredientEntity ingredientEntity = event.ingredients.firstWhere((
+            ingredient,
+          ) {
+            return ingredient.id == element;
+          });
+          RecipeEntity recipes = response.firstWhere((recipe) {
+            return recipe.ingredientId == element;
+          });
 
-        finaly.add({
-          "ingreEntity": ingredientEntity,
-          "quantity": recipes.quantity,
-        });
+          finaly.add({
+            "ingreEntity": ingredientEntity,
+            "quantity": recipes.quantity,
+          });
+        } catch (e) {
+          // Handle case where ingredient is not found
+          print('Ingredient with id $element not found in event.ingredients');
+        }
       });
 
+      print('Final recipe data: $finaly');
       emit(RecipePlaceholderSuccess(finaly));
     } catch (e) {
+      print('Error in RecipePlaceholderBloc: $e');
       emit(
         RecipePlaceholderError(
           appException: e is AppException ? e : AppException(),

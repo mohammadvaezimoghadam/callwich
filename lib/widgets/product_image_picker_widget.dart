@@ -33,7 +33,7 @@ class ProductImagePickerWidget extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
-          // padding: const EdgeInsets.symmetric(vertical: 32),
+          height: 200, // Fixed height for consistent sizing
           decoration: BoxDecoration(
             border: Border.all(
               color: const Color(0xFFe7d9cf),
@@ -46,32 +46,44 @@ class ProductImagePickerWidget extends StatelessWidget {
           child: isEditing
               ? Stack(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: "$baseUrlImg$imageUrl",
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.grey,
+                    // Ensure the image container fills the entire area
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: image != null
+                            // Show the newly selected image if available
+                            ? Image.file(
+                                File(image!.path),
+                                fit: BoxFit.cover, // Cover fit to fill the container completely
+                                width: double.infinity,
+                                height: double.infinity,
+                              )
+                            // Otherwise show the existing image from network
+                            : CachedNetworkImage(
+                                imageUrl: "$baseUrlImg$imageUrl",
+                                fit: BoxFit.cover, // Cover fit to fill the container completely
+                                placeholder: (context, url) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 40,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                     Positioned(
@@ -100,34 +112,40 @@ class ProductImagePickerWidget extends StatelessWidget {
                       onImagePicked(picked);
                     }
                   },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Stack(
                     children: [
-                      image == null
-                          ? Icon(
-                              Icons.add_photo_alternate,
-                              size: 40,
-                              color: Colors.orange[300],
-                            )
-                          : ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                File(image!.path),
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
+                      Positioned.fill(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            image == null
+                                ? Icon(
+                                    Icons.add_photo_alternate,
+                                    size: 40,
+                                    color: Colors.orange[300],
+                                  )
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(image!.path),
+                                      width: double.infinity,
+                                      height: 120,
+                                      fit: BoxFit.cover, // Cover fit for consistency
+                                    ),
+                                  ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              AppStrings.tapToAddImage,
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const Text(
+                              AppStrings.recommendedSize,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF9a6c4c),
                               ),
                             ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        AppStrings.tapToAddImage,
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const Text(
-                        AppStrings.recommendedSize,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9a6c4c),
+                          ],
                         ),
                       ),
                     ],

@@ -6,10 +6,10 @@ sealed class RecipeEvent {
 }
 
 final class RecipeStarted extends RecipeEvent {
-  final List<Map<String, dynamic>> selectedIngredient;
+  final List<Map<String, dynamic>>? selectedIngredient;
   const RecipeStarted({
     required super.isEditingMode,
-    required this.selectedIngredient,
+    this.selectedIngredient,
   });
 }
 

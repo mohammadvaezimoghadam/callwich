@@ -30,8 +30,7 @@ final class InventoryManagementSuccess extends InventoryManagementState {
   final bool inSuccessStateError;
   final String errorText;
 
-  InventoryManagementSuccess(
-     {
+  InventoryManagementSuccess({
     required this.categories,
     required this.allProducts,
     required this.purchasedProducts,
@@ -47,9 +46,9 @@ final class InventoryManagementSuccess extends InventoryManagementState {
     required this.maxPurchasedStock,
     required this.maxManufacturedStock,
     required this.maxIngredientStock,
-    this.deletBtnIsLoading=false,
-    this.inSuccessStateError=false,
-    this.errorText="خطای نا مشخص",
+    this.deletBtnIsLoading = false,
+    this.inSuccessStateError = false,
+    this.errorText = "خطای نامشخص",
   });
 
   InventoryManagementSuccess copyWith({
@@ -70,8 +69,7 @@ final class InventoryManagementSuccess extends InventoryManagementState {
     double? maxIngredientStock,
     bool? deletBtnIsLoading,
     bool? inSuccessStateError,
-    String? errorText
-    
+    String? errorText,
   }) {
     return InventoryManagementSuccess(
       categories: categories ?? this.categories,
@@ -91,7 +89,7 @@ final class InventoryManagementSuccess extends InventoryManagementState {
       maxIngredientStock: maxIngredientStock ?? this.maxIngredientStock,
       deletBtnIsLoading: deletBtnIsLoading ?? this.deletBtnIsLoading,
       inSuccessStateError: inSuccessStateError ?? this.inSuccessStateError,
-      errorText: errorText??this.errorText
+      errorText: errorText ?? this.errorText,
     );
   }
 }

@@ -87,7 +87,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     } else if (widget.ingredient != null) {
       final ingredient = widget.ingredient;
       _sellingPriceController.text = ingredient!.purchasePrice;
-      _nameController.text = ingredient!.name;
+      _nameController.text = ingredient.name;
       _purchasePriceController.text = ingredient.purchasePrice.toString();
       _stockController.text = ingredient.stock;
       _minStockController.text = ingredient.minStock;
@@ -130,7 +130,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             if (state is AddProductError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.exception.message ?? 'خطایی رخ داده است'),
+                  content: Text(state.exception.message ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -141,6 +141,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => RecipeScreen(
+                      isEditingMode: false,
                       productId: state.product!.id,
                       productName: state.product!.name,
                       

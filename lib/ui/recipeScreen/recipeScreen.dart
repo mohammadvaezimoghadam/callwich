@@ -34,7 +34,6 @@ class RecipeScreen extends StatefulWidget {
 
 class _RecipeScreenState extends State<RecipeScreen> {
   late RecipeBloc recipeBloc;
-
   late StreamSubscription streamSubscription;
 
   @override
@@ -60,6 +59,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
         );
         streamSubscription = recipeBloc.stream.listen((state) {
           if (state is AddRecipesSuccess) {
+            // Return true when recipes are successfully saved
             Navigator.pop(context, true);
           }
         });
@@ -90,7 +90,16 @@ class _RecipeScreenState extends State<RecipeScreen> {
                       builder: (context, state) {
                         if (state is RecipeLoading) {
                           return const Center(
-                            child: CircularProgressIndicator(),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFed7c2c)),
+                                ),
+                                SizedBox(height: 16),
+                                Text('در حال بارگذاری مواد اولیه...'),
+                              ],
+                            ),
                           );
                         }
                         if (state is RecipeError) {
@@ -98,7 +107,28 @@ class _RecipeScreenState extends State<RecipeScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text('خطا در بارگذاری لیست مواد اولیه'),
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 64,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'خطا در بارگذاری لیست مواد اولیه',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  state.appException.message,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: () {
@@ -114,6 +144,13 @@ class _RecipeScreenState extends State<RecipeScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFed7c2c),
                                     foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -124,142 +161,192 @@ class _RecipeScreenState extends State<RecipeScreen> {
                           final ingredients = state.ingredients;
                           if (ingredients.isEmpty) {
                             return const Center(
-                              child: Text('مواد اولیه‌ای یافت نشد'),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 64,
+                                    color: Color(0xFF9ca3af),
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'مواد اولیه‌ای یافت نشد',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF6b7280),
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'لطفاً ابتدا مواد اولیه تعریف کنید',
+                                    style: TextStyle(
+                                      color: Color(0xFF9ca3af),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
                           }
                           return Column(
                             children: [
+                              // Product info banner
                               Container(
-                                padding: EdgeInsets.fromLTRB(4, 2, 4, 2),
-                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer
-                                      .withValues(alpha: 0.5),
-                                  border: Border(
-                                    top: BorderSide(
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    bottom: BorderSide(
-                                      color: theme.colorScheme.primary,
-                                    ),
+                                  color: const Color(0xFFed7c2c).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFFed7c2c),
+                                    width: 1,
                                   ),
                                 ),
-                                child: Text(
-                                  "مواد اولیه را برای  ${widget.productName} انتخاب کنید",
-                                  style: theme.textTheme.titleSmall!.copyWith(
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFed7c2c),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.fastfood,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'دستور پخت برای:',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF6b7280),
+                                            ),
+                                          ),
+                                          Text(
+                                            widget.productName,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF1f2937),
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               Expanded(
                                 child: Stack(
                                   children: [
                                     Positioned.fill(
-                                      child: ListView.separated(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          16,
-                                          12,
-                                          16,
-                                          50,
-                                        ),
-                                        itemBuilder: (context, index) {
-                                          final item = ingredients[index];
-                                          return Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
+                                      child: Column(
+                                        children: [
+                                          // Header for ingredients list
+                                          Container(
+                                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                                             decoration: BoxDecoration(
-                                            
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(12),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.05),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 4),
+                                                  color: Colors.grey.withOpacity(0.05),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
                                                 ),
                                               ],
                                             ),
-                                            child: Row(
+                                            child: const Row(
                                               children: [
                                                 Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        item.name,
-                                                        style: theme
-                                                            .textTheme
-                                                            .titleMedium,
-                                                      ),
-                                                      4.heightBox,
-                                                      // Text(
-                                                      //   'واحد: ${item.unit}',
-                                                      //   style: theme
-                                                      //       .textTheme
-                                                      //       .bodySmall
-                                                      //       ?.copyWith(
-                                                      //         color:
-                                                      //             const Color(
-                                                      //               0xFF9A6C4C,
-                                                      //             ),
-                                                      //       ),
-                                                      // ),
-                                                    ],
+                                                  flex: 3,
+                                                  child: Text(
+                                                    'مواد اولیه',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Color(0xFF1f2937),
+                                                    ),
                                                   ),
                                                 ),
-                                                CustomQuantityTextField(
-                                                  // keyValue:
-                                                  //     'qty_${item.id}_${item.quantity}',
-                                                  initialValue: state
-                                                      .ingredients[index]
-                                                      .quantity
-                                                      .toString(),
-
-                                                  width: 100,
-                                                  hintText: '0',
-                                                  textAlign: TextAlign.center,
-                                                  // onChanged: (value) {
-                                                  //   final parsed = int.tryParse(
-                                                  //     value.trim(),
-                                                  //   );
-                                                  //   if (parsed != null &&
-                                                  //       parsed > 0) {
-                                                  //     context.read<RecipeBloc>().add(
-                                                  //       SetIngredientQuantity(
-                                                  //         ingredientId: item.id,
-                                                  //         quantity: parsed,
-                                                  //         isEditingMode: widget
-                                                  //             .isEditingMode,
-                                                  //       ),
-                                                  //     );
-                                                  //   }
-                                                  // },
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    'مقدار مصرفی',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Color(0xFF1f2937),
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
                                                 ),
                                               ],
                                             ),
-                                          );
-                                        },
-                                        separatorBuilder: (context, index) =>
-                                            const SizedBox(height: 12),
-                                        itemCount: ingredients.length,
+                                          ),
+                                          // Ingredients list
+                                          Expanded(
+                                            child: ListView.separated(
+                                              padding: const EdgeInsets.fromLTRB(
+                                                16,
+                                                0,
+                                                16,
+                                                80,
+                                              ),
+                                              itemBuilder: (context, index) {
+                                                // Since the ingredients are RecipeScreenModel objects, we need to handle them properly
+                                                final item = ingredients[index];
+                                                return _buildIngredientItem(
+                                                  context,
+                                                  item,
+                                                  index,
+                                                  state,
+                                                  theme,
+                                                );
+                                              },
+                                              separatorBuilder: (context, index) =>
+                                                  const SizedBox(height: 12),
+                                              itemCount: ingredients.length,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
 
+                                    // Save button at bottom
                                     Positioned(
                                       bottom: 0,
                                       left: 0,
                                       right: 0,
-                                      child: Padding(
+                                      child: Container(
                                         padding: const EdgeInsets.fromLTRB(
                                           16,
-                                          0,
                                           16,
                                           16,
+                                          16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.white.withOpacity(0.1),
+                                              Colors.white,
+                                              Colors.white,
+                                            ],
+                                          ),
                                         ),
                                         child: LoginButtonWidget(
                                           onPressed: () {
@@ -267,9 +354,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                                               OnSaveBtnClicked(
                                                 widget.productId,
                                                 ingredients.cast<IngredientEntity>(),
-
-                                                isEditingMode:
-                                                    widget.isEditingMode,
+                                                isEditingMode: widget.isEditingMode,
                                               ),
                                             );
                                           },
@@ -295,6 +380,104 @@ class _RecipeScreenState extends State<RecipeScreen> {
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildIngredientItem(
+    BuildContext context,
+    dynamic item, // Changed to dynamic since it's RecipeScreenModel
+    int index,
+    RecipeLoaded state,
+    ThemeData theme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Ingredient icon and name
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFf3f4f6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.inventory_2,
+                    color: Color(0xFF9ca3af),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name ?? 'بدون نام',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1f2937),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'شناسه: ${item.ingredientId}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9ca3af),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Quantity input
+          Expanded(
+            flex: 2,
+            child: CustomQuantityTextField(
+              initialValue: item.quantity.toString(),
+              width: double.infinity,
+              hintText: '0',
+              textAlign: TextAlign.center,
+              onChanged: (value) {
+                final parsed = int.tryParse(value.trim());
+                if (parsed != null) {
+                  // Update the quantity in the bloc
+                  context.read<RecipeBloc>().add(
+                    SetIngredientQuantity(
+                      isEditingMode: widget.isEditingMode,
+                      ingredientId: item.ingredientId,
+                      quantity: parsed,
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

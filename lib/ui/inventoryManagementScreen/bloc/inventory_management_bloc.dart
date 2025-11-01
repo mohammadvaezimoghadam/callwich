@@ -39,53 +39,57 @@ class InventoryManagementBloc
       } else if (event is TabChanged) {
         await _onTabChanged(event, emit);
       } else if (event is DeleteIngredientClicked) {
-        await _ondeletIngredient(event, state, emit);
+        await _onDeleteIngredient(event, emit);
       }
     });
   }
 
-  Future<void> _ondeletIngredient(
+  Future<void> _onDeleteIngredient(
     DeleteIngredientClicked event,
-    InventoryManagementState state,
     Emitter<InventoryManagementState> emit,
   ) async {
-    if (state is InventoryManagementSuccess) {
-      final current = state;
-      IngredientEntity ingredient = current.filteredIngredients.firstWhere((
-        ingredient,
-      ) {
-        return ingredient.id == event.ingredientId;
-      });
-
-      ingredient.isdLoading = !ingredient.isdLoading;
-      emit(
-        current.copyWith(
-          deletBtnIsLoading: true,
-          filteredIngredients: current.rawMaterials,
-        ),
-      );
+    // First get the current state
+    final currentState = state;
+    if (currentState is InventoryManagementSuccess) {
       try {
+        // Update UI to show loading state for the specific ingredient
+        final updatedIngredients = List<IngredientEntity>.from(currentState.filteredIngredients);
+        final index = updatedIngredients.indexWhere((ingredient) => ingredient.id == event.ingredientId);
+        
+        if (index != -1) {
+          // Create a copy of the ingredient with loading state
+          final originalIngredient = updatedIngredients[index];
+          updatedIngredients[index] = IngredientEntity(
+            id: originalIngredient.id,
+            name: originalIngredient.name,
+            purchasePrice: originalIngredient.purchasePrice,
+            unit: originalIngredient.unit,
+            stock: originalIngredient.stock,
+            minStock: originalIngredient.minStock,
+            isActive: originalIngredient.isActive,
+            isdLoading: true,
+          );
+          
+          // Emit updated state with loading indicator for the specific ingredient
+          emit(currentState.copyWith(
+            filteredIngredients: updatedIngredients,
+          ));
+        }
+
+        // Perform the actual deletion
         await ingredientsRepository.deletIngredient(event.ingredientId);
-        current.filteredIngredients.removeWhere(
-          (item) => item.id == event.ingredientId,
-        );
+        
+        // After successful deletion, refresh all data
+        await _loadInventoryData(emit);
+        
+        // Trigger reload for other pages
         GetIt.instance<AppStateManager>().triggerAllPagesReload();
-        emit(
-          current.copyWith(
-            deletBtnIsLoading: false,
-            inSuccessStateError: false,
-            filteredIngredients: current.filteredIngredients,
-          ),
-        );
       } catch (e) {
-        ingredient.isdLoading = !ingredient.isdLoading;
-        emit(
-          current.copyWith(
-            deletBtnIsLoading: false,
-            inSuccessStateError: true,
-            errorText: e is AppException?e.message:null,
-          ),
-        );
+        // If deletion fails, revert the loading state and show error
+        emit(currentState.copyWith(
+          inSuccessStateError: true,
+          errorText: e is AppException ? e.message : 'خطای نامشخص در حذف ماده اولیه',
+        ));
       }
     }
   }

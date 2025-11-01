@@ -94,40 +94,43 @@ class ProductFormWidget extends StatelessWidget {
                     : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: sellingPriceController,
-
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color:theme.colorScheme.primary),
-              ),
-              labelText: sellingPriceController.text.isNotEmpty
-                  ? AppStrings.sellingPrice
-                  : null,
-              hintText: AppStrings.sellingPrice,
-              prefixIcon: const Icon(
-                Icons.attach_money,
-                color: Color(0xFF9a6c4c),
-              ),
-              filled: true,
-              fillColor: const Color(0xFFf3ece7),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              hintStyle: const TextStyle(color: Color(0xFF9a6c4c)),
-            ),
-            validator:
-                (v) =>
-                    v == null || v.trim().isEmpty
-                        ? AppStrings.requiredField
-                        : null,
-            onChanged:
-                onFieldChanged != null
-                    ? (val) => onFieldChanged!("sellingPrice", val)
+          Visibility(
+            visible: !isPurchased,
+            child: TextFormField(
+              controller: sellingPriceController,
+            
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color:theme.colorScheme.primary),
+                ),
+                labelText: sellingPriceController.text.isNotEmpty
+                    ? AppStrings.sellingPrice
                     : null,
+                hintText: AppStrings.sellingPrice,
+                prefixIcon: const Icon(
+                  Icons.attach_money,
+                  color: Color(0xFF9a6c4c),
+                ),
+                filled: true,
+                fillColor: const Color(0xFFf3ece7),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                hintStyle: const TextStyle(color: Color(0xFF9a6c4c)),
+              ),
+              validator:
+                  (v) =>
+                      v == null || v.trim().isEmpty
+                          ? AppStrings.requiredField
+                          : null,
+              onChanged:
+                  onFieldChanged != null
+                      ? (val) => onFieldChanged!("sellingPrice", val)
+                      : null,
+            ),
           ),
           const SizedBox(height: 16),
            Visibility(visible: !isaddProductMode && !isEditingProductMode,child: TextFormField( 

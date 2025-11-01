@@ -1,4 +1,4 @@
- import 'package:callwich/data/models/product.dart';
+import 'package:callwich/data/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../res/strings.dart';
@@ -41,7 +41,7 @@ class ProductCardWidget extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Image
+                // Product Image with consistent sizing
                 Expanded(
                   flex: 3,
                   child: Container(
@@ -57,30 +57,57 @@ class ProductCardWidget extends StatelessWidget {
                         topLeft: Radius.circular(8),
                         topRight: Radius.circular(8),
                       ),
-                                             child: CachedNetworkImage(
-                         imageUrl: baseUrlImg + product.imageUrl,
-                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: theme.colorScheme.surfaceVariant,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                theme.colorScheme.primary,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: baseUrlImg + product.imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: theme.colorScheme.surfaceVariant,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: theme.colorScheme.surfaceVariant,
+                              child: Center(
+                                child: Icon(
+                                  Icons.fastfood,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  size: 40,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: theme.colorScheme.surfaceVariant,
-                          child: Center(
-                            child: Icon(
-                              Icons.fastfood,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              size: 40,
+                          // Product type badge on top of image
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: product.type == 'manufactured' 
+                                    ? const Color(0xFF8b5cf6) // violet-500
+                                    : const Color(0xFF3b82f6), // blue-500
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                product.type == 'manufactured' ? 'تولیدی' : 'خریداری',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -109,12 +136,24 @@ class ProductCardWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        '${AppStrings.stock}: ${product.stock}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      // Show stock information only for purchased products
+                      if (product.type == 'purchased') ...[
+                        Text(
+                          '${AppStrings.stock}: ${product.stock}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        // For manufactured products, show a simple text
+                        const Text(
+                          'محصول تولیدی',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6b7280),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

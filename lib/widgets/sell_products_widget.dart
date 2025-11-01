@@ -67,15 +67,6 @@ class ProductCard extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                Positioned(
-                  top: 8,
-                  right: 4,
-                  child: AvailabilityStatusWidget(
-                    isAvailable: _isProductAvailable(product),
-                    customAvailableText: 'موجود',
-                    customUnavailableText: 'ناموجود',
-                  ),
-                ),
                 Positioned.fill(
                   child: Container(
                     width: double.infinity,
@@ -118,6 +109,28 @@ class ProductCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                    ),
+                  ),
+                ),
+                // Minimal inventory status indicator at top
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _isProductAvailable(product) 
+                          ? const Color(0xFF4CAF50) // Green for available
+                          : const Color(0xFFF44336), // Red for unavailable
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _isProductAvailable(product) ? 'موجود' : 'ناموجود',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

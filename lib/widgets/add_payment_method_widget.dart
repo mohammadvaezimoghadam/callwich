@@ -104,9 +104,22 @@ class _AddPaymentMethodWidgetState extends State<AddPaymentMethodWidget> {
                     _paymentMethodController.clear(); 
                     
                     // Show success message
-                  
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('روش پرداخت "$paymentMethodName" با موفقیت اضافه شد'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
                   } catch (e) {
-                    
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('خطا در افزودن روش پرداخت: $e'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
                   } finally {
                     setState(() => _isLoading = false);
                   }

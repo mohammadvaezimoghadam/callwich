@@ -10,9 +10,9 @@ final class RecipeLoading extends RecipeState {
 
 final class RecipeLoaded extends RecipeState {
   final List<RecipeScreenModel> ingredients;
- final bool isdLoading;
+  final bool isdLoading;
  
-  RecipeLoaded(this.ingredients,  {this.isdLoading=false});
+  RecipeLoaded(this.ingredients, {this.isdLoading = false});
 }
 
 final class RecipeError extends RecipeState {
@@ -20,6 +20,6 @@ final class RecipeError extends RecipeState {
   const RecipeError(this.appException);
 }
 
-final class AddRecipesSuccess extends RecipeState{
+final class AddRecipesSuccess extends RecipeState {
 
 }

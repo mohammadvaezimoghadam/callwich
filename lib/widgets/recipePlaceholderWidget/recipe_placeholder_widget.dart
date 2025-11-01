@@ -90,8 +90,8 @@ class RecipePlaceholderWidget extends StatelessWidget {
                             size: 18,
                           ),
                           tooltip: 'ویرایش دستور تهیه',
-                          onPressed: () {
-                            Navigator.push(
+                          onPressed: () async {
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder:
@@ -102,16 +102,17 @@ class RecipePlaceholderWidget extends StatelessWidget {
                                       recpes: state.ingredients,
                                     ),
                               ),
-                            ).then((onValue) {
-                            onValue==true?  BlocProvider.of<RecipePlaceholderBloc>(
-                                context,
-                              ).add(
+                            );
+                            
+                            // Refresh the recipe data when returning from RecipeScreen
+                            if (result == true) {
+                              BlocProvider.of<RecipePlaceholderBloc>(context).add(
                                 RecipePlaceholderStarted(
                                   productId: productId,
                                   ingredients: ingredients,
                                 ),
-                              ):(){};
-                            });
+                              );
+                            }
                           },
                         ),
                       ),
@@ -152,17 +153,66 @@ class RecipePlaceholderWidget extends StatelessWidget {
                   borderRadius: borderRadius ?? BorderRadius.circular(12),
                 ),
                 padding: padding ?? const EdgeInsets.all(16),
-                child: Center(
-                  child: Text(
-                    message,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color:
-                          textColor ??
-                          theme.colorScheme.onSurface.withOpacity(0.6),
-                      fontWeight: FontWeight.w500,
+                child: Column(
+                  children: [
+                    Center(
+                      child: Text(
+                        message,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color:
+                              textColor ??
+                              theme.colorScheme.onSurface.withOpacity(0.6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: 35,
+                      height: 35,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.add,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                          size: 18,
+                        ),
+                        tooltip: 'افزودن دستور تهیه',
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => RecipeScreen(
+                                    productId: productId,
+                                    productName: productName,
+                                    isEditingMode: false,
+                                    recpes: state.ingredients,
+                                  ),
+                            ),
+                          );
+                          
+                          // Refresh the recipe data when returning from RecipeScreen
+                          if (result == true) {
+                            BlocProvider.of<RecipePlaceholderBloc>(context).add(
+                              RecipePlaceholderStarted(
+                                productId: productId,
+                                ingredients: ingredients,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -261,7 +311,7 @@ class RecipePlaceholderWidget extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Text(
                 unit,
                 style: theme.textTheme.bodyMedium?.copyWith(

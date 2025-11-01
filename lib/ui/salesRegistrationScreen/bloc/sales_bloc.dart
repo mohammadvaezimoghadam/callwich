@@ -36,6 +36,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     on<SalesConfirmSale>(_onConfirmSale);
     on<SalesLoadPaymentMethods>(_onLoadPaymentMethods);
     on<SalesCreatePaymentMethod>(_onCreatePaymentMethod);
+    on<SalesResetSaleStatus>(_onResetSaleStatus);
   }
 
   Future<void> _onStarted(SalesStarted event, Emitter<SalesState> emit) async {
@@ -141,10 +142,12 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     try {
       await salesRepository.createSale(event.paymentMethodId, event.items);
       
+      // Clear cart after successful sale
       emit(state.copyWith(
         isProcessingSale: false,
         saleStatus: SaleStatus.success,
-        quantities: {}, // Clear cart after successful sale
+        // Don't clear quantities here, let the UI handle it after showing success screen
+        saleErrorMessage: null,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -173,6 +176,13 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString()));
     }
+  }
+
+  void _onResetSaleStatus(SalesResetSaleStatus event, Emitter<SalesState> emit) {
+    emit(state.copyWith(
+      saleStatus: SaleStatus.initial,
+      saleErrorMessage: null,
+    ));
   }
 }
 

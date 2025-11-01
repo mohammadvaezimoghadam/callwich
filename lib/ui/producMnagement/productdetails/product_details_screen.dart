@@ -32,7 +32,6 @@ class ProductDetailsScreen extends StatelessWidget {
         child: BlocProvider<ProductDitailsBloc>(
           create: (context) {
             _bloc = ProductDitailsBloc(getIt<IProductRepository>());
-
             return _bloc;
           },
           child: BlocListener<ProductDitailsBloc, ProductDitailsState>(
@@ -150,7 +149,6 @@ class ProductDetailsScreen extends StatelessWidget {
                                       productId: product.id,
                                       ingredients: ingredients,
                                       productName: product.name,
-                                        
                                     ),
                                   ),
                                   const SizedBox(height: 32),
@@ -165,17 +163,15 @@ class ProductDetailsScreen extends StatelessWidget {
                                           state is WhemDeleIsCom) {
                                         return ProductActionButtonsWidget(
                                           onEditPressed: () async {
-                                            final result = await Navigator.push(
+                                            final result =
+                                                await Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder: (context) =>
                                                     AddEditProductScreen(
-                                                      isEditingProductMode:
-                                                          true,
-                                                      // isaddProductMode:
-                                                      //     true,
-                                                      product: product,
-                                                    ),
+                                                  isEditingProductMode: true,
+                                                  product: product,
+                                                ),
                                               ),
                                             );
 
@@ -185,16 +181,18 @@ class ProductDetailsScreen extends StatelessWidget {
                                           },
                                           dleletLoading:
                                               state is ProductDitailsSuccess
-                                              ? state.deletBtnIsLoading
-                                              : false,
+                                                  ? state.deletBtnIsLoading
+                                                  : false,
                                           onDeletePressed: () {
-                                            BlocProvider.of<ProductDitailsBloc>(
-                                              context,
-                                            ).add(
-                                              DeleteBtnIsClicked(
-                                                productId: product.id,
-                                              ),
-                                            );
+                                            _showDeleteDialog(context, () {
+                                              BlocProvider.of<
+                                                      ProductDitailsBloc>(
+                                                  context).add(
+                                                DeleteBtnIsClicked(
+                                                  productId: product.id,
+                                                ),
+                                              );
+                                            });
                                           },
                                         );
                                       } else {
@@ -219,14 +217,29 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  _showDeleteDialog(BuildContext context, Function onDeletetap) {
+  void _showDeleteDialog(BuildContext context, Function() onDeletetap) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return DeleteConfirmationDialog(
-          productName: product.name,
-          productId: product.id,
-          onDeletetap: () => onDeletetap(),
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            content: const Text("آیا از حذف این محصول مطمئن هستید؟"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('خیر'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onDeletetap();
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('بله حذف کن'),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -266,43 +279,3 @@ class ProductDetailsScreen extends StatelessWidget {
   }
 }
 
-class DeleteConfirmationDialog extends StatelessWidget {
-  final String productName;
-  final int productId;
-  final Function onDeletetap;
-
-  const DeleteConfirmationDialog({
-    Key? key,
-    required this.productName,
-    required this.productId,
-    required this.onDeletetap,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        title: const Text('حذف محصول'),
-        content: Text(
-          'آیا مطمئن هستید که می‌خواهید "$productName" را حذف کنید؟',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('انصراف'),
-          ),
-          TextButton(
-            onPressed: () {
-              onDeletetap();
-              Navigator.of(context).pop();
-              // Trigger delete event
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
-  }
-}

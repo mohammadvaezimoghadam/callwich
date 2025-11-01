@@ -39,7 +39,9 @@ class SalesRemoveFromCart extends SalesEvent {
   List<Object?> get props => [productId];
 }
 
-class SalesClearCart extends SalesEvent {}
+class SalesClearCart extends SalesEvent {
+  const SalesClearCart();
+}
 
 class SalesConfirmSale extends SalesEvent {
   final double paymentMethodId;
@@ -65,3 +67,6 @@ class SalesCreatePaymentMethod extends SalesEvent {
   List<Object?> get props => [paymentMethodName];
 }
 
+class SalesResetSaleStatus extends SalesEvent {
+  const SalesResetSaleStatus();
+}
