@@ -127,39 +127,10 @@ class BottomNavigationWithFab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Icon(
-                          Icons.shopping_cart_checkout,
-                          size: 30,
-                          color: Colors.white,
-                        ),
-                        // پلوس بیضی بالا سمت راست
-                        Positioned(
-                          right: 8,
-                          top: 10,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 2,
-                                  offset: Offset(0, 2),
-                                )
-                              ],
-                            ),
-                            padding: const EdgeInsets.all(2.5),
-                            child: Icon(
-                              Icons.add,
-                              size: 16,
-                              color: const Color(0xFFED7B2A),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: const Icon(
+                      Icons.shopping_cart_checkout,
+                      size: 30,
+                      color: Colors.white,
                     ),
                   ),
                 ),

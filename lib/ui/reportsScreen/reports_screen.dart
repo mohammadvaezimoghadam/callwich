@@ -19,6 +19,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   int _selectedTabIndex = 0;
   late ReportsBloc? _reportsBloc;
   late final AppStateManager _appStateManager;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -31,12 +33,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
     _reportsBloc?.add(ReportsStarted());
     _appStateManager.addListener(_onAppStateChanged);
+    
+    // Remove the listener from here since we're using onChanged in TextField
   }
 
   @override
   void dispose() {
     _reportsBloc?.close();
     _appStateManager.removeListener(_onAppStateChanged);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -171,6 +176,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _inventoryReport(ThemeData theme, ReportsSuccess state) {
+    // Filter products and ingredients based on search query (case-insensitive)
+    final filteredProducts = _searchQuery.isEmpty
+        ? state.allProducts
+        : state.allProducts
+            .where((product) =>
+                product.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+
+    final filteredIngredients = _searchQuery.isEmpty
+        ? state.allIngredients
+        : state.allIngredients
+            .where((ingredient) =>
+                ingredient.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -181,6 +201,43 @@ class _ReportsScreenState extends State<ReportsScreen> {
               'گزارش موجودی',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Search Bar
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFe7d9cf)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  // Update search query when text changes
+                  setState(() {
+                    _searchQuery = value.trim();
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'جستجوی نام محصول یا مواد اولیه...',
+                  hintStyle: const TextStyle(color: Color(0xFF9a6c4c)),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF9a6c4c)),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Color(0xFF9a6c4c)),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                style: const TextStyle(color: Color(0xFF1b130d)),
               ),
             ),
             const SizedBox(height: 16),
@@ -247,8 +304,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   ),
                   // Rows - Products
-                  ...List.generate(state.allProducts.length, (index) {
-                    final product = state.allProducts[index];
+                  ...List.generate(filteredProducts.length, (index) {
+                    final product = filteredProducts[index];
                     return Container(
                       decoration: BoxDecoration(
                         border: Border(
@@ -300,14 +357,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     );
                   }),
                   // Rows - Ingredients
-                  ...List.generate(state.allIngredients.length, (index) {
-                    final ingredient = state.allIngredients[index];
+                  ...List.generate(filteredIngredients.length, (index) {
+                    final ingredient = filteredIngredients[index];
                     return Container(
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
                             color:
-                                index == state.allIngredients.length - 1
+                                index == filteredIngredients.length - 1
                                     ? Colors.transparent
                                     : const Color(0xFFe7d9cf),
                           ),
@@ -357,6 +414,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ),
                     );
                   }),
+                  // Show message when no results found
+                  if (filteredProducts.isEmpty && filteredIngredients.isEmpty && _searchQuery.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      child: const Text(
+                        'موردی یافت نشد',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF9a6c4c),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

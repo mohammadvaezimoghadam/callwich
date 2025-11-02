@@ -55,17 +55,22 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   bool get _isPurchased => _productType == 'purchased';
 
   bool get _canSave {
-    final requiredFilled =
-        _nameController.text.trim().isNotEmpty && _isPurchased
-        ? true
-        : _sellingPriceController.text.trim().isNotEmpty &&
-              _category != null &&
-              _category != 'Category*';
+    final requiredFilled = _nameController.text.trim().isNotEmpty &&
+        (_isPurchased
+            ? _purchasePriceController.text.trim().isNotEmpty &&
+                _stockController.text.trim().isNotEmpty &&
+                _minStockController.text.trim().isNotEmpty
+            : _sellingPriceController.text.trim().isNotEmpty &&
+                _category != null &&
+                _category != 'Category*');
+    
+    // For adding new products, image is required for manufactured products
+    if (widget.isaddProductMode && !_isPurchased) {
+      return requiredFilled && _image != null;
+    }
+    
     if (_isPurchased) {
-      return requiredFilled &&
-          _purchasePriceController.text.trim().isNotEmpty &&
-          _stockController.text.trim().isNotEmpty &&
-          _minStockController.text.trim().isNotEmpty;
+      return requiredFilled;
     } else if (widget.isaddProductMode == false) {
       return _nameController.text.trim().isNotEmpty &&
           _sellingPriceController.text.trim().isNotEmpty;
@@ -94,7 +99,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _unitController.text = ingredient.unit;
       _productType = 'purchased'; // مواد اولیه همیشه purchased هستند
     }
-    if (widget.isaddProductMode == false) {
+    // Only set to purchased if we're adding a new ingredient, not when editing
+    if (widget.isaddProductMode == false && widget.product == null && widget.ingredient == null) {
       _productType = 'purchased';
     }
     super.initState();
@@ -191,6 +197,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             },
                             isEditing: widget.isEditingProductMode,
                             imageUrl: widget.product?.imageUrl,
+                            isRequired: widget.isaddProductMode && !_isPurchased, // Required for new manufactured products
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -246,6 +253,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                         LoginButtonWidget(
                           onPressed: () {
                             if (!_canSave) return;
+                            
+                            // Check if image is required but not selected
+                            if (widget.isaddProductMode && !_isPurchased && _image == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تصویر نباید خالی باشد'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                            
                             if (_formKey.currentState?.validate() ?? false) {
                               if (widget.isEditingProductMode) {
                                 _addProductBloc.add(
@@ -278,19 +297,22 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                                   ),
                                 );
                               } else if (widget.isaddProductMode) {
-                                _addProductBloc.add(
-                                  SaveProductBtnIsClicked(
-                                    _nameController.text,
-                                    _sellingPriceController.text,
-                                    _purchasePriceController.text,
-                                    _category!,
-                                    _productType,
-                                    _stockController.text,
-                                    _minStockController.text,
-                                    true,
-                                    _image!,
-                                  ),
-                                );
+                                // Only call this if we have an image (which we checked above)
+                                if (_image != null) {
+                                  _addProductBloc.add(
+                                    SaveProductBtnIsClicked(
+                                      _nameController.text,
+                                      _sellingPriceController.text,
+                                      _purchasePriceController.text,
+                                      _category!,
+                                      _productType,
+                                      _stockController.text,
+                                      _minStockController.text,
+                                      true,
+                                      _image!,
+                                    ),
+                                  );
+                                }
                               } else {
                                 _addProductBloc.add(
                                   SaveIngrediantBtnClicked(

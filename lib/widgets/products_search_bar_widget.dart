@@ -6,14 +6,12 @@ class ProductsSearchBarWidget extends StatelessWidget {
   final TextEditingController searchController;
   final ThemeData theme;
   final Function(String searchTerm) onSubmit;
- 
 
   const ProductsSearchBarWidget({
     super.key,
     required this.searchController,
     required this.theme,
     required this.onSubmit,
-  
   });
 
   @override
@@ -33,7 +31,6 @@ class ProductsSearchBarWidget extends StatelessWidget {
           onEditingComplete: () {
             onSubmit(searchController.text);
           },
-          
           controller: searchController,
           decoration: InputDecoration(
             hintText: AppStrings.searchProducts,
@@ -46,7 +43,6 @@ class ProductsSearchBarWidget extends StatelessWidget {
               child: Icon(Icons.search, color: Color(0xFF9A6C4C), size: 25),
             ),
             border: InputBorder.none,
-
             contentPadding: EdgeInsets.symmetric(
               horizontal: AppDimens.medium.toDouble(),
               vertical: 10,

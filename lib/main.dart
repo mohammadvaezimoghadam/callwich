@@ -37,11 +37,12 @@ class MyApp extends StatelessWidget {
           child: BlocBuilder<AuthCubit, AuthState>(
             builder: (context, state) {
               if (state is AuthLoggedInState) {
-                return MainScreen();
+               // return MainScreen();
+                return const MainScreen();
               } else if (state is AuthLoggedOutState) {
                 return const LoginScreen();
               } else {
-                return const SplahScreen();
+                return const SplashScreen();
               }
             },
           ),

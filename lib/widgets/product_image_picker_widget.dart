@@ -12,23 +12,41 @@ class ProductImagePickerWidget extends StatelessWidget {
   final ValueChanged<XFile?> onImagePicked;
   final bool isEditing;
   final String? imageUrl;
+  final bool isRequired; // New parameter to indicate if image is required
   const ProductImagePickerWidget({
     Key? key,
     required this.image,
     required this.onImagePicked,
     required this.isEditing,
     required this.imageUrl,
+    this.isRequired = false, // Default to false
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Determine border color based on requirements
+    Color borderColor = isRequired && image == null 
+        ? Colors.red.withValues(alpha: 0.5) // Red border when required but no image selected
+        : const Color(0xFFe7d9cf); // Default border color
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          AppStrings.productImage,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        Row(
+          children: [
+            const Text(
+              AppStrings.productImage,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 4),
+              const Text(
+                '*',
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 8),
         Container(
@@ -36,7 +54,7 @@ class ProductImagePickerWidget extends StatelessWidget {
           height: 200, // Fixed height for consistent sizing
           decoration: BoxDecoration(
             border: Border.all(
-              color: const Color(0xFFe7d9cf),
+              color: borderColor, // Use dynamic border color
               width: 2,
               style: BorderStyle.solid,
             ),
@@ -138,6 +156,17 @@ class ProductImagePickerWidget extends StatelessWidget {
                               AppStrings.tapToAddImage,
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
+                            if (isRequired) ...[
+                              const SizedBox(height: 4),
+                              const Text(
+                                '(اجباری)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                             const Text(
                               AppStrings.recommendedSize,
                               style: TextStyle(

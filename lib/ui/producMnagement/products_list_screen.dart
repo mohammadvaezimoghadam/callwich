@@ -9,6 +9,7 @@ import 'package:callwich/ui/producMnagement/bloc/product_list_bloc.dart';
 import 'package:callwich/ui/producMnagement/productdetails/product_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
 import '../../widgets/dashboard_header_widget.dart';
 import '../../widgets/products_search_bar_widget.dart';
 import '../../widgets/products_tabs_widget.dart';
@@ -32,19 +33,25 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
   late ProductListBloc? bloc;
 
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _appStateManager = getIt<AppStateManager>();
     _appStateManager.addListener(_onAppStateChanged);
+    
+    // Add listener to search controller for real-time search
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     bloc?.close();  
     _appStateManager.removeListener(_onAppStateChanged);
+    _searchController.removeListener(_onSearchChanged); // Remove listener
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -54,6 +61,28 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
       bloc?.add(ProductListStarted());
       _appStateManager.resetPageReloadFlag('products');
     }
+  }
+
+  // Real-time search with debounce
+  void _onSearchChanged() {
+    final searchTerm = _searchController.text.trim();
+    
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (searchTerm.isNotEmpty) {
+        BlocProvider.of<ProductListBloc>(context).add(
+          OnSubmitEvent(
+            _selectedCategoryId,
+            searchTerm: searchTerm,
+          ),
+        );
+      } else {
+        // If search is empty, reset to normal category view
+        BlocProvider.of<ProductListBloc>(context).add(
+          OnTabChangeEvent(categoryId: _selectedCategoryId),
+        );
+      }
+    });
   }
 
   @override

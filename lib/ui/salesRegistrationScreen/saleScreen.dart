@@ -75,7 +75,7 @@ class _ReportsScreenState extends State<Salescreen> {
                           Expanded(
                             child: Center(
                               child: Text(
-                                AppStrings.pay,
+                                'فروش', // Changed from AppStrings.pay to "فروش"
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -102,7 +102,18 @@ class _ReportsScreenState extends State<Salescreen> {
                               ),
                             ),
                             Expanded(
-                              child: _tabButton(AppStrings.basket, 1, theme),
+                              child: BlocBuilder<SalesBloc, SalesState>(
+                                builder: (context, state) {
+                                  // Calculate total items in cart
+                                  final totalItems = state.quantities.values.fold(0, (sum, qty) => sum + qty);
+                                  return _tabButton(
+                                    AppStrings.basket, 
+                                    1, 
+                                    theme,
+                                    badgeCount: totalItems,
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -144,8 +155,14 @@ class _ReportsScreenState extends State<Salescreen> {
     );
   }
 
-  Widget _tabButton(String label, int index, ThemeData theme) {
+  Widget _tabButton(String label, int index, ThemeData theme, {int badgeCount = 0}) {
     final isSelected = _selectedTabIndex == index;
+    // Define icons for each tab
+    final icons = [
+      Icons.inventory, // Products Management
+      Icons.shopping_cart, // Basket
+    ];
+    
     return GestureDetector(
       onTap: () => setState(() => _selectedTabIndex = index),
       child: Container(
@@ -158,48 +175,226 @@ class _ReportsScreenState extends State<Salescreen> {
             ),
           ),
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color:
-                isSelected ? const Color(0xFFed7c2c) : const Color(0xFF9a6c4c),
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    
+                    child: Icon(
+                      icons[index],
+                      size: 20,
+                      color: isSelected ? const Color(0xFFed7c2c) : const Color(0xFF9a6c4c),
+                    ),
+                  ),
+                ),
+                // Show badge only on the cart tab when there are items
+                if (index == 1 && badgeCount > 0) // Basket tab with items
+                  Positioned(
+                    right: 2,
+                    top: 2,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 12,
+                        minHeight: 12,
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color:
+                    isSelected ? const Color(0xFFed7c2c) : const Color(0xFF9a6c4c),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ProductsTab extends StatelessWidget {
+class _ProductsTab extends StatefulWidget {
   final SalesState state;
   const _ProductsTab(this.state);
 
   @override
+  State<_ProductsTab> createState() => _ProductsTabState();
+}
+
+class _ProductsTabState extends State<_ProductsTab> with TickerProviderStateMixin {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  late ScrollController _scrollController;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  double _lastScrollPosition = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+    });
+    
+    _scrollController = ScrollController();
+    
+    // Animation controller with longer duration for smoother animation
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 250), // Slightly longer for smoother feel
+      vsync: this,
+    );
+    
+    // Fade animation
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut, // Smooth easing curve
+      ),
+    );
+    
+    // Slide animation (slide from top)
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1), // Start from above
+      end: Offset.zero, // End at normal position
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
+    // Start with search bar visible
+    _animationController.value = 1.0;
+    
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    final currentScrollPosition = _scrollController.position.pixels;
+    final scrollDirection = currentScrollPosition - _lastScrollPosition;
+    
+    // Hide search bar when scrolling down
+    if (scrollDirection > 0 && currentScrollPosition > 50) {
+      _animationController.reverse();
+    } 
+    // Show search bar when scrolling up
+    else if (scrollDirection < 0 || currentScrollPosition < 50) {
+      _animationController.forward();
+    }
+    
+    _lastScrollPosition = currentScrollPosition;
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(() {});
+    _searchController.dispose();
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Filter products based on search query
+    final filteredProducts = _searchQuery.isEmpty
+        ? widget.state.products
+        : widget.state.products
+            .where((product) =>
+                product.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+
     return Column(
       children: [
+        // Animated search bar with fade and slide
+        SizeTransition(
+          sizeFactor: _fadeAnimation, // This will animate the height
+          child: FadeTransition(
+            opacity: _fadeAnimation, // This will animate the opacity
+            child: SlideTransition(
+              position: _slideAnimation, // This will slide it in/out
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFe7d9cf)),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'جستجوی محصول...',
+                      hintStyle: const TextStyle(color: Color(0xFF9a6c4c)),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF9a6c4c)),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: Color(0xFF9a6c4c)),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    style: const TextStyle(color: Color(0xFF1b130d)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         // Categories horizontal menu
         SizedBox(
           height: 52,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            itemCount: state.categories.length + 1,
+            itemCount: widget.state.categories.length + 1,
             separatorBuilder: (context, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final bool isAll = index == 0;
               final bool isSelected =
-                  state.selectedCategoryId ==
-                  (isAll ? -1 : state.categories[index - 1].id);
+                  widget.state.selectedCategoryId ==
+                  (isAll ? -1 : widget.state.categories[index - 1].id);
               final String name =
-                  isAll ? 'همه' : state.categories[index - 1].name;
+                  isAll ? 'همه' : widget.state.categories[index - 1].name;
               return GestureDetector(
                 onTap: () {
                   context.read<SalesBloc>().add(
                     SalesCategorySelected(
-                      isAll ? -1 : state.categories[index - 1].id,
+                      isAll ? -1 : widget.state.categories[index - 1].id,
                     ),
                   );
                 },
@@ -244,6 +439,7 @@ class _ProductsTab extends StatelessWidget {
         ),
         Expanded(
           child: GridView.builder(
+            controller: _scrollController, // Use our scroll controller
             padding: const EdgeInsets.only(top: 8),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -251,10 +447,10 @@ class _ProductsTab extends StatelessWidget {
               mainAxisSpacing: 2,
               childAspectRatio: 0.7,
             ),
-            itemCount: state.products.length,
+            itemCount: filteredProducts.length, // Use filtered products
             itemBuilder: (context, index) {
-              final product = state.products[index];
-              final qty = state.quantities[product.id] ?? 0;
+              final product = filteredProducts[index]; // Use filtered products
+              final qty = widget.state.quantities[product.id] ?? 0;
               return ProductCard(
                 product: product,
                 quantity: qty,
@@ -332,66 +528,164 @@ class _CartTabState extends State<_CartTab> {
     List<MapEntry<ProductEntity, int>> items,
     double total,
   ) {
+    // First show phone number dialog
+    _showPhoneNumberDialog(context, salesBloc, items, total);
+  }
+
+  // New function to show phone number dialog
+  void _showPhoneNumberDialog(
+    BuildContext context,
+    SalesBloc salesBloc,
+    List<MapEntry<ProductEntity, int>> items,
+    double total,
+  ) {
+    final phoneController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('تایید فروش'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'نحوه پرداخت: ${widget.state.paymentMethods.isNotEmpty ? widget.state.paymentMethods.firstWhere((pm) => pm.id == _selectedPaymentMethodId.toInt(), orElse: () => widget.state.paymentMethods.first).name : 'نامشخص'}',
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('شماره تماس مشتری'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'نحوه پرداخت: ${widget.state.paymentMethods.isNotEmpty ? widget.state.paymentMethods.firstWhere((pm) => pm.id == _selectedPaymentMethodId.toInt(), orElse: () => widget.state.paymentMethods.first).name : 'نامشخص'}',
+                  textAlign: TextAlign.right,
+                ),
+                const SizedBox(height: 8),
+                Text('مبلغ کل: ${total.toToman()}', textAlign: TextAlign.right),
+                const SizedBox(height: 8),
+                Text('تعداد اقلام: ${items.length}', textAlign: TextAlign.right),
+                const SizedBox(height: 16),
+                const Text('لطفاً شماره تماس مشتری را وارد کنید:', textAlign: TextAlign.right),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    hintText: 'مثال: 09123456789',
+                    border: OutlineInputBorder(),
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('انصراف'),
               ),
-              const SizedBox(height: 8),
-              Text('مبلغ کل: ${total.toToman()}'),
-              const SizedBox(height: 8),
-              Text('تعداد اقلام: ${items.length}'),
-              const SizedBox(height: 16),
-              const Text('آیا از انجام این فروش مطمئن هستید؟'),
+              ElevatedButton(
+                onPressed: () {
+                  final phoneNumber = phoneController.text.trim();
+                  // Basic phone number validation
+                  if (phoneNumber.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('لطفاً شماره تماس را وارد کنید'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  // Close phone number dialog and show confirmation dialog
+                  Navigator.of(context).pop();
+                  _showFinalConfirmationDialog(context, salesBloc, items, total, phoneNumber);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFed7c2c),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('تایید'),
+              ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('انصراف'),
-            ),
-            ElevatedButton(
-              onPressed:
-                  _selectedPaymentMethodId == -1
-                      ? null
-                      : () {
-                        final saleData =
-                            items
-                                .map(
-                                  (item) => {
-                                    "product_id": double.parse(
-                                      item.key.id.toString(),
-                                    ),
-                                    "quantity": double.parse(
-                                      item.value.toString(),
-                                    ),
-                                  },
-                                )
-                                .toList();
+        );
+      },
+    );
+  }
 
-                        // ارسال به سرور از طریق BLoC
-                        salesBloc.add(
-                          SalesConfirmSale(
-                            paymentMethodId: _selectedPaymentMethodId,
-                            items: saleData,
-                          ),
-                        );
-                        Navigator.of(context).pop();
-                      },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFed7c2c),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('تایید'),
+  // New function to show final confirmation dialog with phone number
+  void _showFinalConfirmationDialog(
+    BuildContext context,
+    SalesBloc salesBloc,
+    List<MapEntry<ProductEntity, int>> items,
+    double total,
+    String phoneNumber,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('تایید نهایی فروش'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'نحوه پرداخت: ${widget.state.paymentMethods.isNotEmpty ? widget.state.paymentMethods.firstWhere((pm) => pm.id == _selectedPaymentMethodId.toInt(), orElse: () => widget.state.paymentMethods.first).name : 'نامشخص'}',
+                  textAlign: TextAlign.right,
+                ),
+                const SizedBox(height: 8),
+                Text('مبلغ کل: ${total.toToman()}', textAlign: TextAlign.right),
+                const SizedBox(height: 8),
+                Text('تعداد اقلام: ${items.length}', textAlign: TextAlign.right),
+                const SizedBox(height: 8),
+                Text('شماره تماس مشتری: $phoneNumber', textAlign: TextAlign.right),
+                const SizedBox(height: 16),
+                const Text('آیا از انجام این فروش مطمئن هستید؟', textAlign: TextAlign.right),
+              ],
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('انصراف'),
+              ),
+              ElevatedButton(
+                onPressed:
+                    _selectedPaymentMethodId == -1
+                        ? null
+                        : () {
+                          final saleData =
+                              items
+                                  .map(
+                                    (item) => {
+                                      "product_id": double.parse(
+                                        item.key.id.toString(),
+                                      ),
+                                      "quantity": double.parse(
+                                        item.value.toString(),
+                                      ),
+                                    },
+                                  )
+                                  .toList();
+
+                          // ارسال به سرور از طریق BLoC
+                          salesBloc.add(
+                            SalesConfirmSale(
+                              paymentMethodId: _selectedPaymentMethodId,
+                              items: saleData,
+                              // You can add the phone number to the sale data if needed
+                              // For now, we're just collecting it for record purposes
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFed7c2c),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('تایید نهایی'),
+              ),
+            ],
+          ),
         );
       },
     );
