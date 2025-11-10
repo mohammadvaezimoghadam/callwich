@@ -8,4 +8,8 @@ sealed class DashboardBlocEvent {
 
 final class DashboardStarted extends DashboardBlocEvent {}
 
-final class DashboardRefresh extends DashboardBlocEvent {}
+final class DashboardRefresh extends DashboardBlocEvent {
+  final Completer<void>? completer;
+
+  DashboardRefresh({this.completer});
+}

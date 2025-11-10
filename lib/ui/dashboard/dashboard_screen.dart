@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:callwich/components/extensions.dart';
 import 'package:callwich/data/common/app_state_manager.dart';
 import 'package:callwich/data/repository/auth_repository.dart';
@@ -69,94 +71,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   children: [
                     Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            // Header (scrolls with content)
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: DashboardHeaderWidget(
-                                theme: theme,
-                                title: AppStrings.dashboard,
-                                iconButton: IconButton(
-                                  onPressed: () {
-                                    getIt<IAuthRepository>().singOut();
-                                  },
-                                  icon: Icon(Icons.logout),
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          final completer = Completer<void>();
+                          dashboardBlocBloc?.add(DashboardRefresh(completer: completer));
+                          return completer.future;
+                        },
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            children: [
+                              // Header (scrolls with content)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: DashboardHeaderWidget(
+                                  theme: theme,
+                                  title: AppStrings.dashboard,
+                                  iconButton: IconButton(
+                                    onPressed: () {
+                                      getIt<IAuthRepository>().singOut();
+                                    },
+                                    icon: Icon(Icons.logout),
+                                  ),
                                 ),
                               ),
-                            ),
 
-                            (AppDimens.large - 8).heightBox,
+                              (AppDimens.large - 8).heightBox,
 
-                            // Today's Sales Card
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                              // Today's Sales Card
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: SalesCardWidget(theme: theme),
                               ),
-                              child: SalesCardWidget(theme: theme),
-                            ),
 
-                            AppDimens.medium.heightBox,
+                              AppDimens.medium.heightBox,
 
-                            // Low Stock Alert Card
-                            LowStockAlertWidget(),
+                              // Low Stock Alert Card
+                              LowStockAlertWidget(),
 
-                            AppDimens.medium.heightBox,
+                              AppDimens.medium.heightBox,
 
-                            // Action Buttons
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                              // Action Buttons
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: ActionButtonsWidget(
+                                  theme: theme,
+                                  onNewSale: () {
+                                    final dashboardBloc = BlocProvider.of<DashboardBloc>(context);
+                                    Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    )
+                                        .push(
+                                      MaterialPageRoute(
+                                        builder: (context) => Salescreen(),
+                                      ),
+                                    )
+                                        .then((val) {
+                                      if (val == true) {
+                                        dashboardBloc.add(DashboardRefresh());
+                                      }
+                                    });
+
+                                    
+                                  },
+                                  onAddProduct: () {
+                                    // Navigator.pushNamed(context, RouteNames.productsListScreen);
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => AddEditProductScreen(
+                                              isaddProductMode: true,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                  onAddingredients: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) => AddEditProductScreen(
+                                              isaddProductMode: false,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                              child: ActionButtonsWidget(
-                                theme: theme,
-                                onNewSale: () {
-                                Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => Salescreen(),
-                                    ),
-                                  ).then((val){
-                                    val==true?BlocProvider.of<DashboardBloc>(context).add(DashboardRefresh()):(){};
-                                  });
 
-                                  
-                                },
-                                onAddProduct: () {
-                                  // Navigator.pushNamed(context, RouteNames.productsListScreen);
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => AddEditProductScreen(
-                                            isaddProductMode: true,
-                                          ),
-                                    ),
-                                  );
-                                },
-                                onAddingredients: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => AddEditProductScreen(
-                                            isaddProductMode: false,
-                                          ),
-                                    ),
-                                  );
-                                },
+                              AppDimens.medium.heightBox,
+
+                              // Sales Trend Chart
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: SalesTrendChartWidget(),
                               ),
-                            ),
-
-                            AppDimens.medium.heightBox,
-
-                            // Sales Trend Chart
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: SalesTrendChartWidget(),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

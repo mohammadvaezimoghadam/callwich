@@ -1,3 +1,4 @@
+import 'package:callwich/components/extensions.dart';
 import 'package:callwich/data/common/http_response_validator.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
@@ -29,12 +30,14 @@ class SalesDataSource
     required String customerPhoneNumber,
     required String customerName,
   }) async {
+    final normalizedPhoneNumber = customerPhoneNumber;
+
     // The key was changed from 'payment_method' to 'payment_method_id'
     // to match the backend schema.
     final requestData = {
       'payment_method_id': paymentMethodId,
       'items': items,
-      'customer_phone_number': customerPhoneNumber,
+      'customer_phone_number': normalizedPhoneNumber,
       'customer_name': customerName,
     };
 
