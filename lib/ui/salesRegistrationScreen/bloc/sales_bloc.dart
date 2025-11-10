@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:callwich/data/models/product.dart';
 import 'package:callwich/data/models/category.dart';
 import 'package:callwich/data/models/payment_metod.dart';
+import 'package:callwich/data/models/sale.dart';
 import 'package:callwich/data/repository/product_repository.dart';
 import 'package:callwich/data/repository/category_repository.dart';
 import 'package:callwich/data/repository/sales_repository.dart';
@@ -56,6 +57,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         products: products,
         selectedCategoryId: selectedCategoryId,
         paymentMethods: _allPaymentMethods,
+        completedSale: null,
       ));
     } catch (e) {
       emit(state.copyWith(status: SalesStatus.error, errorMessage: e.toString()));
@@ -140,7 +142,12 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     ));
 
     try {
-      await salesRepository.createSale(event.paymentMethodId, event.items);
+      final sale = await salesRepository.createSale(
+        event.paymentMethodId,
+        event.items,
+        customerPhoneNumber: event.customerPhoneNumber,
+        customerName: event.customerName,
+      );
       
       // Clear cart after successful sale
       emit(state.copyWith(
@@ -148,12 +155,14 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         saleStatus: SaleStatus.success,
         // Don't clear quantities here, let the UI handle it after showing success screen
         saleErrorMessage: null,
+        completedSale: sale,
       ));
     } catch (e) {
       emit(state.copyWith(
         isProcessingSale: false,
         saleStatus: SaleStatus.error,
         saleErrorMessage: e.toString(),
+        completedSale: null,
       ));
     }
   }
@@ -182,6 +191,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     emit(state.copyWith(
       saleStatus: SaleStatus.initial,
       saleErrorMessage: null,
+      completedSale: null,
     ));
   }
 }

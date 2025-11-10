@@ -15,6 +15,7 @@ class SalesState {
   final bool isProcessingSale;
   final String? saleErrorMessage;
   final List<PaymentMethodEntity> paymentMethods;
+  final SaleEntity? completedSale;
 
   const SalesState({
     required this.status,
@@ -28,6 +29,7 @@ class SalesState {
     required this.isProcessingSale,
     required this.saleErrorMessage,
     required this.paymentMethods,
+    required this.completedSale,
   });
 
   const SalesState.initial()
@@ -41,7 +43,10 @@ class SalesState {
         saleStatus = SaleStatus.initial,
         isProcessingSale = false,
         saleErrorMessage = null,
-        paymentMethods = const [];
+        paymentMethods = const [],
+        completedSale = null;
+
+  static const Object _undefined = Object();
 
   SalesState copyWith({
     SalesStatus? status,
@@ -55,6 +60,7 @@ class SalesState {
     bool? isProcessingSale,
     String? saleErrorMessage,
     List<PaymentMethodEntity>? paymentMethods,
+    Object? completedSale = _undefined,
   }) {
     return SalesState(
       status: status ?? this.status,
@@ -68,6 +74,9 @@ class SalesState {
       isProcessingSale: isProcessingSale ?? this.isProcessingSale,
       saleErrorMessage: saleErrorMessage ?? this.saleErrorMessage,
       paymentMethods: paymentMethods ?? this.paymentMethods,
+      completedSale: identical(completedSale, _undefined)
+          ? this.completedSale
+          : completedSale as SaleEntity?,
     );
   }
 

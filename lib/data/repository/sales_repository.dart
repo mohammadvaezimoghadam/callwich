@@ -3,8 +3,15 @@ import 'package:injectable/injectable.dart';
 
 
 
+import 'package:callwich/data/models/sale.dart';
+
 abstract class ISalesRepository {
-  Future<void> createSale(double paymentMethodId, List<Map<String, dynamic>> items);
+  Future<SaleEntity> createSale(
+    double paymentMethodId,
+    List<Map<String, dynamic>> items, {
+    required String customerPhoneNumber,
+    required String customerName,
+  });
   Future<List<double>> readSales(String startDate, String endDate);
 }
 
@@ -14,11 +21,18 @@ class SalesRepository implements ISalesRepository {
 
   SalesRepository({required this.salesDataSource});
   @override
-  Future<void> createSale(
+  Future<SaleEntity> createSale(
     double paymentMethodId,
-    List<Map<String, dynamic>> items,
-  ) async {
-    return await salesDataSource.createSale(paymentMethodId, items);
+    List<Map<String, dynamic>> items, {
+    required String customerPhoneNumber,
+    required String customerName,
+  }) async {
+    return await salesDataSource.createSale(
+      paymentMethodId,
+      items,
+      customerPhoneNumber: customerPhoneNumber,
+      customerName: customerName,
+    );
   }
 
   @override

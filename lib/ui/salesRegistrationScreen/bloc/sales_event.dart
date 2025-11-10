@@ -46,14 +46,18 @@ class SalesClearCart extends SalesEvent {
 class SalesConfirmSale extends SalesEvent {
   final double paymentMethodId;
   final List<Map<String, dynamic>> items;
+  final String customerPhoneNumber;
+  final String customerName;
   
   const SalesConfirmSale({
     required this.paymentMethodId,
     required this.items,
+    required this.customerPhoneNumber,
+    required this.customerName,
   });
   
   @override
-  List<Object?> get props => [paymentMethodId, items];
+  List<Object?> get props => [paymentMethodId, items, customerPhoneNumber, customerName];
 }
 
 class SalesLoadPaymentMethods extends SalesEvent {}

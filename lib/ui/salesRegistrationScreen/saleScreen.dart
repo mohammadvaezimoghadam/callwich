@@ -14,6 +14,7 @@ import 'package:callwich/data/repository/sales_repository.dart';
 import 'package:callwich/data/repository/payment_methods_repository.dart';
 import 'package:callwich/components/extensions.dart';
 import 'package:callwich/data/models/product.dart';
+import 'package:callwich/data/models/sale.dart';
 import 'package:callwich/widgets/add_payment_method_widget.dart';
 import 'package:get_it/get_it.dart';
 
@@ -26,15 +27,15 @@ class Salescreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<Salescreen> {
   int _selectedTabIndex = 0;
-  late final SalesBloc? salesBloc;
-  late final StreamSubscription streamSubscription;
+  late final SalesBloc salesBloc;
+  late final StreamSubscription<SalesState> streamSubscription;
 
   @override
   void dispose() {
     super.dispose();
  
-    salesBloc!.close();
-    streamSubscription!.cancel();
+    salesBloc.close();
+    streamSubscription.cancel();
   }
 
   @override
@@ -53,11 +54,11 @@ class _ReportsScreenState extends State<Salescreen> {
                 salesRepository: getIt<ISalesRepository>(),
                 paymentMethodsRepository: getIt<IPaymentMethodsRepository>(),
               );
-              salesBloc!.add(const SalesStarted());
-              streamSubscription = salesBloc!.stream.listen((state) {
+              salesBloc.add(const SalesStarted());
+              streamSubscription = salesBloc.stream.listen((state) {
                 // Remove the automatic reload from here since it's handled in the success dialog
               });
-              return salesBloc!;
+              return salesBloc;
             },
             child: Column(
               children: [
@@ -540,6 +541,7 @@ class _CartTabState extends State<_CartTab> {
     double total,
   ) {
     final phoneController = TextEditingController();
+    final nameController = TextEditingController();
     
     showDialog(
       context: context,
@@ -572,6 +574,17 @@ class _CartTabState extends State<_CartTab> {
                   ),
                   textAlign: TextAlign.right,
                 ),
+                const SizedBox(height: 16),
+                const Text('لطفاً نام مشتری را وارد کنید:', textAlign: TextAlign.right),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  textAlign: TextAlign.right,
+                  decoration: const InputDecoration(
+                    hintText: 'مثال: علی رضایی',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
               ],
             ),
             actions: [
@@ -582,11 +595,12 @@ class _CartTabState extends State<_CartTab> {
               ElevatedButton(
                 onPressed: () {
                   final phoneNumber = phoneController.text.trim();
+                  final customerName = nameController.text.trim();
                   // Basic phone number validation
-                  if (phoneNumber.isEmpty) {
+                  if (phoneNumber.isEmpty || customerName.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('لطفاً شماره تماس را وارد کنید'),
+                        content: Text('نام و شماره تماس مشتری الزامی است'),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -595,7 +609,7 @@ class _CartTabState extends State<_CartTab> {
                   
                   // Close phone number dialog and show confirmation dialog
                   Navigator.of(context).pop();
-                  _showFinalConfirmationDialog(context, salesBloc, items, total, phoneNumber);
+                  _showFinalConfirmationDialog(context, salesBloc, items, total, phoneNumber, customerName);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFed7c2c),
@@ -617,6 +631,7 @@ class _CartTabState extends State<_CartTab> {
     List<MapEntry<ProductEntity, int>> items,
     double total,
     String phoneNumber,
+    String customerName,
   ) {
     showDialog(
       context: context,
@@ -639,6 +654,8 @@ class _CartTabState extends State<_CartTab> {
                 Text('تعداد اقلام: ${items.length}', textAlign: TextAlign.right),
                 const SizedBox(height: 8),
                 Text('شماره تماس مشتری: $phoneNumber', textAlign: TextAlign.right),
+                const SizedBox(height: 8),
+                Text('نام مشتری: $customerName', textAlign: TextAlign.right),
                 const SizedBox(height: 16),
                 const Text('آیا از انجام این فروش مطمئن هستید؟', textAlign: TextAlign.right),
               ],
@@ -672,6 +689,8 @@ class _CartTabState extends State<_CartTab> {
                             SalesConfirmSale(
                               paymentMethodId: _selectedPaymentMethodId,
                               items: saleData,
+                              customerPhoneNumber: phoneNumber,
+                              customerName: customerName,
                               // You can add the phone number to the sale data if needed
                               // For now, we're just collecting it for record purposes
                             ),
@@ -694,17 +713,15 @@ class _CartTabState extends State<_CartTab> {
   // تابع نمایش صفحه موفقیت فروش
   void _showSuccessScreen(
     BuildContext context,
-    List<MapEntry<ProductEntity, int>> items,
-    double total,
-    String paymentMethodName,
+    SaleEntity sale,
+    List<ProductEntity> allProducts,
     SalesBloc salesBloc, // Pass the bloc instance
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SalesSuccessScreen(
-          items: items,
-          total: total,
-          paymentMethodName: paymentMethodName,
+          sale: sale,
+          allProducts: allProducts,
           onDone: () {
             // Clear the cart
             salesBloc.add(SalesClearCart());
@@ -737,37 +754,10 @@ class _CartTabState extends State<_CartTab> {
     return BlocListener<SalesBloc, SalesState>(
       listener: (context, state) {
         if (state.saleStatus == SaleStatus.success) {
-          // Get current items for success screen
-          final items =
-              state.quantities.entries
-                  .map(
-                    (e) => MapEntry(
-                      state.allProducts.firstWhere(
-                        (p) => p.id == e.key,
-                      ),
-                      e.value,
-                    ),
-                  )
-                  .toList();
-
-          final total = items.fold<double>(0, (sum, entry) {
-            final price = double.tryParse(entry.key.sellingPrice) ?? 0;
-            final itemTotal = price * entry.value;
-            print('Item: ${entry.key.name}, Price: $price, Quantity: ${entry.value}, Item Total: $itemTotal');
-            return sum + itemTotal;
-          });
-
-          print('Calculated total: $total');
-
-          // Get payment method name
-          final paymentMethodName = state.paymentMethods.isNotEmpty
-              ? state.paymentMethods.firstWhere(
-                  (pm) => pm.id == _selectedPaymentMethodId.toInt(),
-                  orElse: () => state.paymentMethods.first,
-                ).name
-              : 'نامشخص';
-
-          print('Payment method: $paymentMethodName');
+          final sale = state.completedSale;
+          if (sale == null) {
+            return;
+          }
 
           // Get the sales bloc instance
           final salesBloc = context.read<SalesBloc>();
@@ -777,7 +767,7 @@ class _CartTabState extends State<_CartTab> {
             salesBloc.add(const SalesResetSaleStatus());
           });
 
-          _showSuccessScreen(context, items, total, paymentMethodName, salesBloc);
+          _showSuccessScreen(context, sale, state.allProducts, salesBloc);
         } else if (state.saleStatus == SaleStatus.error) {
           // Reset the sale status to prevent showing error again
           Future.microtask(() {
@@ -1022,29 +1012,38 @@ class _CartTabState extends State<_CartTab> {
 }
 
 class SalesSuccessScreen extends StatelessWidget {
-  final List<MapEntry<ProductEntity, int>> items;
-  final double total;
-  final String paymentMethodName;
+  final SaleEntity sale;
+  final List<ProductEntity> allProducts;
   final Function onDone;
 
   const SalesSuccessScreen({
     Key? key,
-    required this.items,
-    required this.total,
-    required this.paymentMethodName,
+    required this.sale,
+    required this.allProducts,
     required this.onDone,
   }) : super(key: key);
 
+  ProductEntity? _findProduct(int productId) {
+    for (final product in allProducts) {
+      if (product.id == productId) {
+        return product;
+      }
+    }
+    return null;
+  }
+
+  String _formatQuantity(double quantity) {
+    if (quantity == quantity.roundToDouble()) {
+      return quantity.toInt().toString();
+    }
+    return quantity.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
-    print('SalesSuccessScreen - Received items: ${items.length}, Total: $total, Payment Method: $paymentMethodName');
-    
-    // Log each item for debugging
-    for (var item in items) {
-      final price = double.tryParse(item.key.sellingPrice) ?? 0;
-      final itemTotal = price * item.value;
-      print('Item: ${item.key.name}, Price: $price, Quantity: ${item.value}, Item Total: $itemTotal');
-    }
+    final saleItems = sale.items;
+    final customer = sale.customer;
+    final formattedSaleTime = '${sale.saleTime.toLocal()}'.split('.').first;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -1180,7 +1179,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    paymentMethodName,
+                                    sale.paymentMethod.name,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
@@ -1232,7 +1231,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    total.toToman(),
+                                    sale.finalAmount.toToman(),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
@@ -1246,6 +1245,95 @@ class SalesSuccessScreen extends StatelessWidget {
                         ],
                       ),
                       
+                      const SizedBox(height: 24),
+
+                      // Invoice and customer details
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.receipt_long, color: Colors.green),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'شماره فاکتور: ${sale.invoiceNumber}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time, color: Colors.amber),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'تاریخ ثبت: $formattedSaleTime',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 24),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.person, color: Colors.blueGrey),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'مشتری: ${customer.name.isNotEmpty ? customer.name : 'نامشخص'}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'شماره تماس: ${customer.phoneNumber.isNotEmpty ? customer.phoneNumber : 'ثبت نشده'}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'تعداد سفارشات قبلی: ${customer.totalOrders}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 24),
                       
                       // Items title with decorative line
@@ -1369,7 +1457,7 @@ class SalesSuccessScreen extends StatelessWidget {
                             // Items with alternating row colors
                             Column(
                               children: [
-                                for (int i = 0; i < items.length; i++)
+                                for (int i = 0; i < saleItems.length; i++)
                                   Container(
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     decoration: BoxDecoration(
@@ -1377,7 +1465,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                       border: Border(
                                         bottom: BorderSide(
                                           color: Colors.grey.shade200,
-                                          width: i == items.length - 1 ? 0 : 1,
+                                          width: i == saleItems.length - 1 ? 0 : 1,
                                         ),
                                       ),
                                     ),
@@ -1386,7 +1474,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                         Expanded(
                                           flex: 3,
                                           child: Text(
-                                            items[i].key.name,
+                                            _findProduct(saleItems[i].productId)?.name ?? 'محصول #${saleItems[i].productId}',
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
@@ -1396,7 +1484,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                         Expanded(
                                           flex: 1,
                                           child: Text(
-                                            '${items[i].value}',
+                                            _formatQuantity(saleItems[i].quantity),
                                             style: const TextStyle(
                                               fontSize: 14,
                                             ),
@@ -1406,7 +1494,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                         Expanded(
                                           flex: 2,
                                           child: Text(
-                                            (double.tryParse(items[i].key.sellingPrice) ?? 0).toToman(),
+                                            saleItems[i].unitPrice.toToman(),
                                             style: const TextStyle(
                                               fontSize: 14,
                                             ),
@@ -1416,7 +1504,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                         Expanded(
                                           flex: 2,
                                           child: Text(
-                                            ((double.tryParse(items[i].key.sellingPrice) ?? 0) * items[i].value).toToman(),
+                                            saleItems[i].totalPrice.toToman(),
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,
@@ -1455,7 +1543,7 @@ class SalesSuccessScreen extends StatelessWidget {
                                   Expanded(
                                     flex: 2,
                                     child: Text(
-                                      total.toToman(),
+                                      sale.finalAmount.toToman(),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
