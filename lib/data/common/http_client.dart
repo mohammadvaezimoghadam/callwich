@@ -1,6 +1,8 @@
 
 import 'package:dio/dio.dart';
 
+import 'package:callwich/data/repository/auth_repository.dart';
+
 const String baseUrl = "https://api.callwich.ir/api/";
 const String baseUrlImg = "https://api.callwich.ir/";
 
@@ -88,16 +90,14 @@ final Dio httpClient = Dio(
   ),
 )
   ..interceptors.add(CustomErrorInterceptor())
-  // ..interceptors.add(
-  //   InterceptorsWrapper(
-  //     onRequest: (options, handler) {
-  //       final authInfo = AuthRepository.authChangeNotifier.value;
-  //       if (authInfo != null && authInfo.accessToken.isNotEmpty) {
-  //         options.headers["Authorization"] = "bearer ${authInfo.accessToken}";
-  //         options.headers[""]="";
-  //       }
-  //       handler.next(options);
-  //     },
-  //   ),
-  // )
-  ;
+  ..interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final authInfo = AuthRepository.authChangeNotifier.value;
+        if (authInfo != null && authInfo.accessToken.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer ${authInfo.accessToken}';
+        }
+        handler.next(options);
+      },
+    ),
+  );

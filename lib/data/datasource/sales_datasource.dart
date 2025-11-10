@@ -30,7 +30,7 @@ class SalesDataSource
     required String customerPhoneNumber,
     required String customerName,
   }) async {
-    final normalizedPhoneNumber = customerPhoneNumber;
+    final normalizedPhoneNumber = customerPhoneNumber.toEnglishDigits();
 
     // The key was changed from 'payment_method' to 'payment_method_id'
     // to match the backend schema.
@@ -54,6 +54,11 @@ class SalesDataSource
     final response = await httpClient.get(
       'sales/',
       queryParameters: {'start_date': startDay, 'end_date': endDay},
+      options: Options(
+        headers: {
+          'accept': 'application/json',
+        },
+      ),
     );
     validateResponse(response);
     final List<double> salesList = [];

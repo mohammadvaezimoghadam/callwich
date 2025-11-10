@@ -1,4 +1,5 @@
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:callwich/data/common/app_exeption.dart';
 import 'package:callwich/data/repository/reports_repository.dart';
 import 'package:equatable/equatable.dart';
@@ -22,15 +23,17 @@ class SalesCardBloc extends Bloc<SalesCardEvent, SalesCardState> {
   ) async {
     emit(SalesCardLoading());
     try {
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
-      final yesterdayStart = DateTime(now.year, now.month, now.day - 1);
+      final dateFormatter = DateFormat('yyyy-MM-dd');
+      final todayStr = dateFormatter.format(DateTime.now());
+      final yesterdayStr = dateFormatter.format(
+        DateTime.now().subtract(const Duration(days: 1)),
+      );
 
       final todaySales = int.parse(await reportsRepository.dailySales(
-        todayStart.toString(),
+        todayStr,
       ));
       final yesterdaySales = int.parse(await reportsRepository.dailySales(
-        yesterdayStart.toString(),
+        yesterdayStr,
       ));
 
       double percentChange = 0;
